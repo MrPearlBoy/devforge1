@@ -428,7 +428,6 @@ export interface PlatformConfig {
   mode: string;
   provider: string;
   model: string;
-  mock_mode: boolean;
   execution_provider: string;
   execution_enabled: boolean;
   github_configured: boolean;

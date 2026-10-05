@@ -47,7 +47,7 @@ def test_dashboard_payload_shape(client, auth, project):
         "REQUIREMENTS", "ARCHITECTURE", "DEVELOPMENT", "TESTING", "SECURITY", "DOCUMENTATION",
     }
     assert "project" in body and body["project"]["id"] == project["id"]
-    assert "ai_config" in body and body["ai_config"]["mock_mode"] is True
+    assert "ai_config" in body and body["ai_config"]["mode"] == "live"
     assert isinstance(body["agent_activity"], list)
 
 

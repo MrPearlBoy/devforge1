@@ -33,52 +33,6 @@ class DocumentationAgent(BaseAgent):
         return build_user_prompt(context.to_prompt_block(), self._facts_block(context))
 
     # --------------------------------------------------------------- mock payload
-    def mock_payload(self, context: AgentContext, task: str = "") -> dict:
-        facts = self._collect_facts(context)
-        files = [
-            self._readme(facts, context),
-            self._setup_doc(facts, context),
-            self._api_doc(facts, context),
-            self._architecture_doc(facts, context),
-            self._testing_doc(facts, context),
-            self._security_doc(facts, context),
-        ]
-        requirements = facts["requirements"].get("functional_requirements", [])
-        return {
-            "overview": (
-                f"Documentation generated from the project's approved artifacts and its actual "
-                f"source tree ({facts['file_count']} files in the workspace). It documents "
-                f"{len(requirements)} functional requirements, {len(facts['endpoints'])} API "
-                f"endpoints and the latest test and security results."
-            ),
-            "files": [
-                {
-                    "path": item["path"],
-                    "title": item["title"],
-                    "content": item["content"],
-                    "summary": item["summary"],
-                    "requirement_refs": item["requirement_refs"],
-                }
-                for item in files
-            ],
-            "documented_facts": [
-                f"Workspace files: {', '.join(facts['top_level'])}",
-                f"API endpoints derived from the approved architecture: {len(facts['endpoints'])}",
-                f"Test results: {facts['test'].get('passed', 0)}/{facts['test'].get('total', 0)} "
-                f"passing (status {facts['test'].get('status', 'not run')})",
-                f"Security findings: {facts['security'].get('open_total', 0)} open",
-                f"Requirements: {len(requirements)} functional, "
-                f"{len(facts['requirements'].get('non_functional_requirements', []))} non-functional",
-            ],
-            "gaps": facts["gaps"],
-            "notes": [
-                "MOCK MODE: documents are rendered from structured project facts rather than "
-                "model-written prose; no feature is described that does not exist.",
-                "Regenerating this stage after code changes produces a new artifact revision.",
-            ],
-        }
-
-    # ------------------------------------------------------------------- render
     def render(self, payload: dict, context: AgentContext, task: str = "") -> AgentOutcome:
         files = payload.get("files", [])
         index_lines = [

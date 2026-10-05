@@ -59,35 +59,6 @@ class SecurityAgent(BaseAgent):
                                                              for finding in report.findings])
 
     # --------------------------------------------------------------- mock review
-    def mock_payload(self, context: AgentContext, task: str = "") -> dict:
-        report = getattr(self, "_last_scan", None) or self._scan(context)
-        groups: dict[str, int] = {}
-        for finding in report.findings:
-            groups[finding.category] = groups.get(finding.category, 0) + 1
-        breakdown = ", ".join(f"{count} {category.lower()}" for category, count in groups.items())
-        return {
-            "summary": (
-                f"The deterministic scanner reviewed {report.files_scanned} project file(s) against "
-                f"{report.rules_run} rules and reported {len(report.findings)} finding(s)"
-                + (f" ({breakdown})" if breakdown else "")
-                + ". No model-based review was performed in MOCK MODE, so only rule-detectable "
-                  "issues are reported."
-            ),
-            "observations": [],
-            "controls_present": self._controls_present(context, report),
-            "false_positive_candidates": [
-                finding.rule_id
-                for finding in report.findings
-                if "placeholder" in (finding.evidence or "").lower()
-            ],
-            "limitations": BASE_LIMITATIONS + [
-                "MOCK MODE: no language model review was performed, so logic-level issues that "
-                "pattern rules cannot express are not covered by this run.",
-            ],
-            "next_steps": self._next_steps(report),
-        }
-
-    # ------------------------------------------------------------------- render
     def render(self, payload: dict, context: AgentContext, task: str = "") -> AgentOutcome:
         """Minimal outcome for the qualitative review; ``run`` assembles the report."""
         return AgentOutcome(

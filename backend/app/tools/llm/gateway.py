@@ -81,7 +81,7 @@ def extract_json(text: str) -> dict | list | None:
 class LLMGateway:
     """Provider-agnostic model gateway."""
 
-    def __init__(self, provider: LLMProvider, *, mode: str = "mock") -> None:
+    def __init__(self, provider: LLMProvider, *, mode: str = "live") -> None:
         self.provider = provider
         self.mode = mode
         self.usage_total = LLMUsage()

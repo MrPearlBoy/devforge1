@@ -431,7 +431,6 @@ class ProjectService:
                 "mode": settings.resolved_ai_mode,
                 "provider": settings.llm_provider,
                 "model": settings.llm_model,
-                "mock_mode": not settings.is_live_ai,
                 "execution_provider": settings.execution_provider,
                 "execution_enabled": settings.execution_enabled,
                 "github_configured": bool(settings.github_token),

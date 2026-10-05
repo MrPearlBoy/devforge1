@@ -37,8 +37,8 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-devforge}:${POSTGRES_PASSWORD:-devforge}@db:5432/${POSTGRES_DB:-devforge}
       SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
-      DEVFORGE_MODE: ${DEVFORGE_MODE:-mock}
-      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      DEVFORGE_MODE: ${DEVFORGE_MODE:-live}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-auto}

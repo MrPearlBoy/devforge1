@@ -10,8 +10,7 @@ Given approved requirements (or the raw human input), this module derives:
 
 It contains no project-specific hard-coding: everything is driven by keyword and
 capability analysis of the requirement text, so the same code paths serve any
-project a user types in. Live mode lets the LLM refine this structure; mock mode
-uses these derivations directly (and marks the output as MOCK MODE).
+project a user types in.
 """
 from __future__ import annotations
 
@@ -479,7 +478,7 @@ def crud_endpoints(entity: EntitySpec, *, requires_auth: bool = True) -> list[di
 
 
 def project_layout(domain: DomainModel) -> list[dict]:
-    """Files the Developer Agent creates for the inferred domain (mock mode plan)."""
+    """Files the Developer Agent creates for the inferred domain."""
     primary = domain.primary
     layout = [
         {"path": "backend/app/__init__.py", "purpose": "Package marker", "component_ref": "ARCH-002"},

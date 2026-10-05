@@ -1,7 +1,7 @@
 """Shared pytest fixtures.
 
-The suite runs against an isolated SQLite database and a temporary workspace, in mock
-mode, so it never touches development data or an LLM provider.
+The test suite runs against an isolated SQLite database and a temporary workspace
+with live AI defaults enabled.
 """
 from __future__ import annotations
 
@@ -22,7 +22,9 @@ os.environ["WORKSPACE_ROOT"] = str(TMP_ROOT / "workspace")
 os.environ["CHECKPOINT_PATH"] = str(TMP_ROOT / "checkpoints.sqlite")
 os.environ["CHECKPOINT_BACKEND"] = "memory"
 os.environ["SECRET_KEY"] = "test-secret-key-0123456789abcdefghijklmnop"
-os.environ["DEVFORGE_MODE"] = "mock"
+os.environ["DEVFORGE_MODE"] = "live"
+os.environ["LLM_PROVIDER"] = "openai"
+os.environ["LLM_API_KEY"] = "test-key"
 os.environ["EXECUTION_PROVIDER"] = "subprocess"
 os.environ["AUTO_CREATE_SCHEMA"] = "true"
 

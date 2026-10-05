@@ -124,7 +124,6 @@ export function ProjectOverviewPage() {
               <p className="font-semibold text-slate-500">AI mode</p>
               <p>
                 {data.ai_config.mode} · {data.ai_config.provider} · {data.ai_config.model}
-                {data.ai_config.mock_mode ? " (deterministic mock outputs)" : " (live provider)"}
               </p>
             </div>
             <div>

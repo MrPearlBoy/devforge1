@@ -87,10 +87,6 @@ class BaseAgent(ABC):
         """Build the system prompt for this agent."""
 
     @abstractmethod
-    def mock_payload(self, context: AgentContext, task: str = "") -> dict:
-        """Deterministic, context-derived payload used when mode == 'mock'."""
-
-    @abstractmethod
     def render(self, payload: dict, context: AgentContext, task: str = "") -> AgentOutcome:
         """Turn a (validated) payload into artifacts, trace links and messages."""
 
@@ -103,25 +99,10 @@ class BaseAgent(ABC):
     def stage(self) -> str:
         return self.spec.stage
 
-    @property
-    def is_mock(self) -> bool:
-        return self.gateway.is_mock
-
     def run(self, context: AgentContext, task: str = "") -> AgentOutcome:
         """Execute the agent and return its outcome (never raises raw LLM errors)."""
         prompt = self.build_prompt(context, task)
         system = self.system_prompt()
-
-        if self.is_mock:
-            payload = self.mock_payload(context, task)
-            payload = self._validate_payload(payload)
-            outcome = self.render(payload, context, task)
-            outcome.meta.setdefault("mode", "mock")
-            outcome.warnings.append(
-                "MOCK MODE: this output was produced deterministically from project context, "
-                "not by a live language model."
-            )
-            return outcome
 
         if self.output_schema is None:  # narrative-only agent in live mode
             result = self.gateway.generate(
@@ -147,9 +128,9 @@ class BaseAgent(ABC):
             return payload
         try:
             return self.output_schema.model_validate(payload).model_dump()
-        except Exception as exc:  # a bug in a mock payload must be loud
+        except Exception as exc:  # a bug must be loud
             raise AgentExecutionError(
-                f"{self.spec.name} mock payload failed schema validation.",
+                f"{self.spec.name} payload failed schema validation.",
                 detail={"error": str(exc)[:400]},
             ) from exc
 

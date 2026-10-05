@@ -39,12 +39,11 @@ class TokenResponse(BaseModel):
 
 
 class AIConfigRead(BaseModel):
-    """Surfaced to the UI so the workspace can show MOCK MODE / LIVE AI MODE."""
+    """Platform configuration surfaced to the UI."""
 
     mode: str
     provider: str
     model: str
-    mock_mode: bool
     execution_provider: str
     execution_enabled: bool
     github_configured: bool

@@ -2,18 +2,18 @@
 from __future__ import annotations
 
 
-def test_health_reports_mock_mode(client):
+def test_health_reports_live_mode(client):
     response = client.get("/api/health")
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok"
-    assert body["ai"]["mode"] == "mock"
+    assert body["ai"]["mode"] == "live"
     assert body["database"]["connected"] is True
 
 
 def test_config_endpoint_exposes_ai_and_sandbox_settings(client):
     body = client.get("/api/config").json()
-    assert body["mock_mode"] is True
+    assert body["mode"] == "live"
     assert body["execution_enabled"] is True
     assert body["max_stage_iterations"] >= 1
 

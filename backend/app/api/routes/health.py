@@ -50,9 +50,7 @@ def config() -> AIConfigRead:
     return AIConfigRead(
         mode=gateway.mode,
         provider=gateway.provider_name,
-        # the effective model: in mock mode a placeholder provider model is misleading
         model=gateway.model,
-        mock_mode=not settings.is_live_ai,
         execution_provider=str(execution.get("provider", settings.execution_provider)),
         execution_enabled=bool(execution.get("available", settings.execution_enabled)),
         github_configured=bool(settings.github_token),

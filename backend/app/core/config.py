@@ -48,8 +48,7 @@ class Settings(BaseSettings):
     database_url: str = f"sqlite:///{BACKEND_DIR / 'devforge.db'}"
 
     # ---- AI mode -----------------------------------------------------------
-    devforge_mode: str = "auto"  # mock | live | auto
-    llm_provider: str = "mock"
+    llm_provider: str = "openai"
     llm_api_key: str = ""
     llm_model: str = "gpt-4o-mini"
     llm_base_url: str = ""
@@ -90,15 +89,6 @@ class Settings(BaseSettings):
     git_author_email: str = "devforge@example.com"
 
     # ---- validators --------------------------------------------------------
-    @field_validator("devforge_mode")
-    @classmethod
-    def _validate_mode(cls, value: str) -> str:
-        allowed = {"mock", "live", "auto"}
-        value = (value or "auto").strip().lower()
-        if value not in allowed:
-            raise ValueError(f"DEVFORGE_MODE must be one of {sorted(allowed)}")
-        return value
-
     @field_validator("execution_provider")
     @classmethod
     def _validate_execution(cls, value: str) -> str:
@@ -118,21 +108,6 @@ class Settings(BaseSettings):
         return {c.strip() for c in self.execution_allowed_commands.split(",") if c.strip()}
 
     @property
-    def resolved_ai_mode(self) -> str:
-        """Resolve ``auto`` into a concrete mode: ``live`` when a key exists."""
-        if self.devforge_mode in {"mock", "live"}:
-            return self.devforge_mode
-        if self.llm_provider == "mock":
-            return "mock"
-        if self.llm_provider in {"ollama"} or self.llm_api_key.strip():
-            return "live"
-        return "mock"
-
-    @property
-    def is_live_ai(self) -> bool:
-        return self.resolved_ai_mode == "live"
-
-    @property
     def workspace_path(self) -> Path:
         path = Path(self.workspace_root)
         if not path.is_absolute():
@@ -143,6 +118,14 @@ class Settings(BaseSettings):
     @property
     def repository_root(self) -> Path:
         return REPO_DIR
+
+    @property
+    def resolved_ai_mode(self) -> str:
+        return "live"
+
+    @property
+    def is_live_ai(self) -> bool:
+        return True
 
     @property
     def is_production(self) -> bool:

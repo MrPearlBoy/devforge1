@@ -1,13 +1,13 @@
-"""Anthropic Messages API provider (embeddings fall back to the mock hashing model)."""
+"""Anthropic Messages API provider."""
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterator, Sequence
 
 import httpx
 
 from app.core.errors import LLMError
 from app.tools.llm.base import LLMProvider, LLMResult, LLMUsage
-from app.tools.llm.mock_provider import MockProvider
 
 DEFAULT_ANTHROPIC_VERSION = "2023-06-01"
 
@@ -19,7 +19,18 @@ class AnthropicProvider(LLMProvider):
     def __init__(self, **kwargs) -> None:  # noqa: ANN003
         super().__init__(**kwargs)
         self.base_url = (self.base_url or "https://api.anthropic.com/v1").rstrip("/")
-        self._fallback_embeddings = MockProvider(embedding_dim=256)
+
+    @staticmethod
+    def _deterministic_embedding(text: str, *, dim: int = 256) -> list[float]:
+        digest = hashlib.sha256(text.encode("utf-8")).digest()
+        values = []
+        for index in range(dim):
+            byte = digest[index % len(digest)]
+            values.append((byte / 255.0) * 2.0 - 1.0)
+        return values
+
+    def _fallback_embeddings(self, texts: Sequence[str]) -> list[list[float]]:
+        return [self._deterministic_embedding(text) for text in texts]
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -70,5 +81,7 @@ class AnthropicProvider(LLMProvider):
         yield self.generate(prompt, system=system, **kwargs).text
 
     def embed(self, texts: Sequence[str]) -> list[list[float]]:
-        """Anthropic has no public embeddings endpoint — use deterministic fallback."""
-        return self._fallback_embeddings.embed(texts)
+        """Anthropic has no public embeddings endpoint in this project, so use a deterministic fallback."""
+        if not texts:
+            return []
+        return self._fallback_embeddings(texts)

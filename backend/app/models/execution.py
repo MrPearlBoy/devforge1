@@ -31,8 +31,8 @@ class AgentExecution(Base, UUIDPrimaryKey, Timestamped):
         sa.String(32), nullable=False, default=AgentStatus.RUNNING.value
     )
 
-    mode: Mapped[str] = mapped_column(sa.String(16), nullable=False, default="mock")
-    provider: Mapped[str] = mapped_column(sa.String(40), nullable=False, default="mock")
+    mode: Mapped[str] = mapped_column(sa.String(16), nullable=False, default="live")
+    provider: Mapped[str] = mapped_column(sa.String(40), nullable=False, default="openai")
     llm_model: Mapped[str] = mapped_column(sa.String(80), nullable=False, default="")
     prompt_tokens: Mapped[int] = mapped_column(sa.Integer, nullable=False, default=0)
     completion_tokens: Mapped[int] = mapped_column(sa.Integer, nullable=False, default=0)

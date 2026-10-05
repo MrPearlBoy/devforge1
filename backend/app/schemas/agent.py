@@ -66,7 +66,7 @@ class ChatResponse(BaseModel):
     content: str
     created_at: datetime
     execution_id: str | None = None
-    mode: str = "mock"
+    mode: str = "live"
     model: str = ""
     proposed_changes: list[ProposedFileChange] = Field(default_factory=list)
     approval_id: str | None = None
