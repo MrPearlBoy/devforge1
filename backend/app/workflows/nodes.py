@@ -120,7 +120,9 @@ def _agent_node(state: DevForgeState, agent_key: str, *, stage: str,
                 # Workflow executions are attributed to the agent catalogue; the human
                 # decision that authorised them is recorded on the approval row.
                 user=None,
-                query=human_instructions or resolved_task,
+                query="\n\n".join(
+                    part for part in (resolved_task, human_instructions) if part
+                ),
             )
         )
         artifacts = ArtifactService(db).list_for_project(project_id, stage=stage, limit=5)
@@ -214,7 +216,28 @@ def architecture_agent_node(state: DevForgeState) -> dict[str, Any]:
 
 def developer_agent_node(state: DevForgeState) -> dict[str, Any]:
     instructions = state.get("instructions", "")
-    task = AGENT_TASKS["developer"]
+    repair_tasks: list[str] = []
+    approval = state.get("approval") or {}
+    approval_status = (state.get("approval_status") or "").upper()
+    review_feedback = "\n".join(
+        part.strip()
+        for part in (approval.get("comments", ""), approval.get("instructions", ""))
+        if part and part.strip()
+    )
+    if (
+        approval_status in {
+            ApprovalDecision.REQUEST_CHANGES.value,
+            ApprovalDecision.REJECT.value,
+        }
+        and review_feedback
+    ):
+        repair_tasks.append(
+            f"Apply the requested corrections from the {approval.get('gate', 'review')} review. "
+            "Make a concrete, minimal code change that addresses the feedback, preserve behavior "
+            "that was already approved, and return a reviewable change set:\n"
+            f"{review_feedback}"
+        )
+
     security = state.get("security_results") or {}
     if security.get("findings"):
         details = security.get("finding_details") or []
@@ -243,6 +266,11 @@ def developer_agent_node(state: DevForgeState) -> dict[str, Any]:
                 f"({security.get('counts', {})}); inspect the security report and remediate them."
             )
         instructions = f"{instructions}\n\n{security_feedback}".strip()
+        repair_tasks.append(
+            "Remediate the Security Agent findings with the smallest targeted code changes. "
+            "Use the reported evidence and recommendations; do not claim a finding is fixed "
+            "unless the proposed changes address it.\n" + security_feedback
+        )
 
     test_results = state.get("test_results") or {}
     if (test_results.get("status") or "").upper() in {"FAILED", "ERROR"}:
@@ -277,13 +305,14 @@ def developer_agent_node(state: DevForgeState) -> dict[str, Any]:
                 test_feedback += " Notes: " + "; ".join(str(note)[:300] for note in diagnostics[:4])
             if raw_output:
                 test_feedback += f"\nTest runner output:\n{raw_output[-1500:]}"
-        task = (
+        repair_tasks.append(
             "Fix the reported failing tests in the current implementation. Inspect the failing "
             "test and relevant source files, make the smallest code change that addresses the "
             "root cause, and return a reviewable code change set. Do not respond with an "
             "explanation-only result.\n\n" + test_feedback
         )
         instructions = f"{instructions}\n\n{test_feedback}".strip()
+    task = "\n\n".join(repair_tasks) or AGENT_TASKS["developer"]
     return _agent_node(
         state, "developer", stage=Stage.DEVELOPMENT.value,
         task=task, instructions=instructions,

@@ -26,6 +26,7 @@ os.environ.setdefault("DATABASE_URL", f"sqlite:///{TMP}/workflow.db")
 os.environ.setdefault("WORKSPACE_ROOT", f"{TMP}/workspace")
 os.environ.setdefault("CHECKPOINT_PATH", f"{TMP}/checkpoints.sqlite")
 os.environ.setdefault("SECRET_KEY", "workflow-cli-secret-0123456789abcdefghij")
+os.environ.setdefault("DEVFORGE_MODE", "mock")
 
 from sqlalchemy import func, select  # noqa: E402
 

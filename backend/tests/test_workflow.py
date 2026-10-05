@@ -37,6 +37,12 @@ def test_developer_receives_actionable_test_and_security_feedback(monkeypatch):
     nodes.developer_agent_node(
         {
             "instructions": "Keep the patch focused.",
+            "approval_status": "REQUEST_CHANGES",
+            "approval": {
+                "gate": "test_review",
+                "comments": "Handle expired tokens in the login flow.",
+                "instructions": "Preserve the current response schema.",
+            },
             "security_results": security_results,
             "test_results": {
                 "status": "FAILED",
@@ -55,6 +61,9 @@ def test_developer_receives_actionable_test_and_security_feedback(monkeypatch):
     assert captured["agent_key"] == "developer"
     assert captured["stage"] == "DEVELOPMENT"
     assert "Fix the reported failing tests" in captured["task"]
+    assert "Remediate the Security Agent findings" in captured["task"]
+    assert "test_review review" in captured["task"]
+    assert "Handle expired tokens" in captured["task"]
     assert "test_login" in captured["task"]
     assert "tests/test_auth.py" in captured["task"]
     assert "test_login" in captured["instructions"]
@@ -108,6 +117,95 @@ def test_project_context_includes_and_prioritizes_failed_backend_test(tmp_path, 
     assert failure_path in files
     assert "backend/app/module_00.py" in files
     assert len(files) == 12
+
+
+def test_project_context_matches_test_runner_path_without_backend_prefix(
+    tmp_path, monkeypatch
+):
+    from app.services.project_context import ProjectContextService
+    from app.services.workspace import WorkspaceService
+
+    workspace = WorkspaceService(root=tmp_path)
+    project_id = "test-runner-path"
+    for index in range(15):
+        workspace.write_text(
+            project_id, f"backend/app/module_{index:02}.py", f"VALUE = {index}\n"
+        )
+    workspace.write_text(
+        project_id,
+        "backend/tests/test_auth.py",
+        "def test_login():\n    assert False\n",
+    )
+
+    context = ProjectContextService(db=None, workspace=workspace)
+    monkeypatch.setattr(context, "search_project_knowledge", lambda *args, **kwargs: [])
+    files = context.get_relevant_source_files(
+        project_id, "Fix failing test tests/test_auth.py::test_login"
+    )
+
+    assert "backend/tests/test_auth.py" in files
+
+
+def test_mock_developer_does_not_return_explanation_for_failed_test_feedback():
+    from app.agents.developer.agent import DeveloperAgent
+    from app.services.project_context import AgentContext
+    from app.tools.llm.gateway import LLMGateway
+    from app.tools.llm.mock_provider import MockProvider
+
+    context = AgentContext(
+        project_id="mock-repair",
+        project={"name": "Repair test"},
+        stage="DEVELOPMENT",
+        source_files={
+            "backend/app/main.py": "def answer():\n    return 41\n",
+            "backend/tests/test_main.py": (
+                "def test_answer():\n    assert answer() == 42\n"
+            ),
+        },
+    )
+    agent = DeveloperAgent(LLMGateway(MockProvider(), mode="mock"))
+
+    payload = agent.mock_payload(
+        context,
+        "Fix the reported failing tests. "
+        "tests/test_main.py::test_answer FAILED: assert 41 == 42",
+    )
+
+    assert payload["changes"] == []
+    assert "MOCK MODE" in payload["analysis"]
+    assert any("remain unresolved" in risk for risk in payload["risks"])
+
+
+def test_mock_developer_does_not_claim_unknown_security_rule_is_fixed():
+    from app.agents.developer.agent import DeveloperAgent
+    from app.services.project_context import AgentContext
+    from app.tools.llm.gateway import LLMGateway
+    from app.tools.llm.mock_provider import MockProvider
+
+    context = AgentContext(
+        project_id="mock-security",
+        project={"name": "Security test"},
+        stage="DEVELOPMENT",
+        source_files={"backend/app/config.py": "SECRET = 'weak'\n"},
+        security_summary={
+            "top_findings": [
+                {
+                    "rule_id": "SEC-UNKNOWN",
+                    "severity": "HIGH",
+                    "title": "Unrecognized security issue",
+                    "file_path": "backend/app/config.py",
+                    "line": 1,
+                }
+            ]
+        },
+    )
+    agent = DeveloperAgent(LLMGateway(MockProvider(), mode="mock"))
+
+    payload = agent.mock_payload(context, "Remediate the Security Agent findings.")
+
+    assert payload["changes"] == []
+    assert "SEC-UNKNOWN" in payload["analysis"]
+    assert "No security finding is claimed to be fixed." in payload["notes"]
 
 
 def test_workflow_completes_with_six_human_gates(client, auth, project, completed_run):

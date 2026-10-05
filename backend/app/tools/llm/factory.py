@@ -38,7 +38,7 @@ PROVIDERS: dict[str, type[LLMProvider]] = {
     "mock": MockProvider,
 }
 
-KEYLESS_PROVIDERS = {"ollama", "mock"}
+KEYLESS_PROVIDERS = {"ollama"}
 
 
 def build_provider() -> tuple[LLMProvider, str]:
@@ -55,7 +55,7 @@ def build_provider() -> tuple[LLMProvider, str]:
         "timeout": settings.llm_timeout_seconds,
     }
 
-    if mode == "mock":
+    if mode == "mock" or provider_key == "mock":
         return MockProvider(embedding_dim=min(settings.embedding_dim, 512)), "mock"
 
     provider_class = PROVIDERS.get(provider_key)

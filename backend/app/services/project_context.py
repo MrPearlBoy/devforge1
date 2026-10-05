@@ -10,6 +10,7 @@ Implements the context contract required by the specification:
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from sqlalchemy import desc, func, select
@@ -43,6 +44,7 @@ logger = get_logger("devforge.context")
 #: How much of an artifact body is embedded into an agent prompt.
 ARTIFACT_EXCERPT_LIMIT = 6000
 SOURCE_FILE_LIMIT = 12
+WORKSPACE_PATH_RE = re.compile(r"(?<![\w.-])(?:[\w.-]+[\\/])+[\w.-]+")
 
 
 @dataclass
@@ -262,9 +264,18 @@ class ProjectContextService:
         if not files:
             return {}
         selected: dict[str, str] = {}
-        normalized_query = query.replace("\\", "/")
+        requested_paths = {
+            match.group().replace("\\", "/").lower()
+            for match in WORKSPACE_PATH_RE.finditer(query)
+        }
         for path, content in files.items():
-            if path in normalized_query:
+            normalized_path = path.replace("\\", "/").lower()
+            if any(
+                normalized_path == requested
+                or normalized_path.endswith(f"/{requested}")
+                or requested.endswith(f"/{normalized_path}")
+                for requested in requested_paths
+            ):
                 selected[path] = content
                 if len(selected) >= limit:
                     return selected

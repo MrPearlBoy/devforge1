@@ -1,3 +1,4 @@
+
 """Deterministic domain inference shared by the Architecture and Developer agents.
 
 Given approved requirements (or the raw human input), this module derives:

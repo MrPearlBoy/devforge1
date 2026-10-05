@@ -134,11 +134,14 @@ All configuration is environment-driven; copy `.env.example` to `.env` (never co
 context-derived output and marks it clearly as mock (API responses, UI badges, artefact
 metadata). `live` uses the configured provider and real embeddings. `auto` picks live only
 when a provider other than `mock` is configured **and** a key (or Ollama) is present.
-Mock mode cannot reason through arbitrary test failures. To enable the Developer Agent's
-test-fix reasoning, configure a live provider and set `DEVFORGE_MODE=live` (or use
+Mock mode cannot reason through arbitrary test failures, human review requests, or security
+findings it has no remediation template for; it reports these as unresolved rather than
+claiming a fix. To enable the Developer Agent's
+test-fix and review-feedback reasoning, configure a live provider and set `DEVFORGE_MODE=live` (or use
 `DEVFORGE_MODE=auto` with a supported provider and credentials). After changing `.env`,
 restart the backend. The agent receives the failing test file and failure output alongside
-the implementation files, then returns a reviewable code change set for approval.
+the implementation files, plus test/security/review feedback as an explicit coding task,
+then returns a reviewable code change set for approval.
 
 ---
 

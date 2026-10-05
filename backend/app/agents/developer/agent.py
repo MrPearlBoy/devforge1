@@ -38,6 +38,13 @@ FIELD_HINTS = re.compile(
 )
 DATABASE_HINTS = ("database", "db", "postgres", "mysql", "mongodb", "sqlite")
 QUESTION_HINTS = ("how ", "why ", "what ", "explain", "where ", "which ", "review", "summar")
+TEST_FAILURE_HINTS = (
+    "fix the reported failing tests",
+    "testing agent reported",
+    "failing test",
+    "test execution or collection error",
+    "apply the requested corrections",
+)
 
 
 class DeveloperAgent(BaseAgent):
@@ -68,6 +75,32 @@ class DeveloperAgent(BaseAgent):
 
         findings = (context.security_summary or {}).get("top_findings") or []
         lowered = (task or "").lower()
+
+        if any(hint in lowered for hint in TEST_FAILURE_HINTS):
+            return {
+                "analysis": (
+                    "No code change was generated: MOCK MODE uses fixed templates and cannot "
+                    "diagnose arbitrary test failures. Use a live LLM provider to generate a "
+                    "failure-specific patch; the failing tests and current source files are "
+                    "included in the Developer Agent context."
+                ),
+                "affected_files": [],
+                "changes": [],
+                "verification": [
+                    "Configure a live LLM provider and set DEVFORGE_MODE=live, then rerun "
+                    "the Developer Agent on the failing test feedback."
+                ],
+                "notes": [
+                    "No source files were changed because a template-based patch could not be "
+                    "verified as addressing the reported failure."
+                ],
+                "requirement_refs": [],
+                "architecture_refs": [],
+                "risks": [
+                    "The reported test failures remain unresolved until a live Developer Agent "
+                    "produces and a human approves a targeted change set."
+                ],
+            }
 
         # 1) security remediation
         if findings and (any(hint in lowered for hint in FIX_HINTS) or not files):
@@ -130,9 +163,33 @@ class DeveloperAgent(BaseAgent):
 
     def _remediation_payload(self, context: AgentContext, domain: DomainModel,
                              findings: list[dict]) -> dict:
-        rules = sorted({finding.get("rule_id", "") for finding in findings})
         files = build_remediation(domain, context.project.get("name", "Service"), findings)
         changes = [file.as_change("update") for file in files]
+        if not changes:
+            reported_rules = ", ".join(
+                sorted({finding.get("rule_id", "unknown") for finding in findings})
+            )
+            return {
+                "analysis": (
+                    "No code change was generated: MOCK MODE has no deterministic remediation "
+                    f"template for the reported security rule(s): {reported_rules}. A live "
+                    "Developer Agent is required to analyze these findings and propose a "
+                    "targeted, reviewable fix."
+                ),
+                "affected_files": [],
+                "changes": [],
+                "verification": [
+                    "Configure a live LLM provider and set DEVFORGE_MODE=live, then rerun the "
+                    "Developer Agent on the security feedback."
+                ],
+                "notes": ["No security finding is claimed to be fixed."],
+                "requirement_refs": [],
+                "architecture_refs": [],
+                "risks": [
+                    "The reported security findings remain unresolved until a targeted change "
+                    "set is generated, approved and verified."
+                ],
+            }
         rendered = "\n".join(
             f"- {finding.get('rule_id')} [{finding.get('severity')}] {finding.get('title')} "
             f"in {finding.get('file_path')}"
