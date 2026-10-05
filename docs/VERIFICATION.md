@@ -9,6 +9,29 @@ syntax-checked rather than executed — that limitation is stated in the README 
 
 ---
 
+## Latest re-check — 2026-10-05
+
+The repository was re-run in this session with Python 3.11.2, Node 22.22.3, npm 10.9.8,
+SQLite, and the built-in mock LLM provider:
+
+| Check | Result |
+|---|---|
+| `python -m pytest tests -q` | **54 passed** |
+| `python scripts/run_workflow.py --reject-first` | **COMPLETED**; one requirements change request was reworked, then the six approval gates were approved; generated suite **16/16 passed** |
+| `python scripts/smoke_pipeline.py --stages all` | **PIPELINE OK**; 6 agents produced artifacts; generated suite **16/16 passed** |
+| `python scripts/smoke_api.py` | **59 checks passed**; `API RESULT: OK` |
+| `npm run build && npm run lint` | **passed**; latest Vite bundle 371.98 kB (112.85 kB gzip), no TypeScript errors |
+
+The mock workflow requires no provider API key. The sample project still reported two HIGH
+security findings and several traceability gaps; this is surfaced as human review work rather
+than hidden by the workflow. The workflow and pipeline outputs are written to temporary
+folders and were not added to the repository.
+
+The Vercel Vite configuration was added and the frontend production build passed, but publishing
+was blocked: `vercel deploy --temporary --yes` reported that temporary deployments were not
+available for this attempt and required login. The CLI had no Vercel credentials, so **no remote
+deployment URL was created** in this run.
+
 ## 1. Backend test suite
 
 ```bash

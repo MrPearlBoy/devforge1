@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../store/auth";
-import { ApiError } from "../services/api";
+import { ApiError, isBackendApiConfigured } from "../services/api";
 import { ErrorNote } from "../components/ui";
 
 const DEMO = { email: "demo@devforge.dev", password: "devforge123" };
@@ -37,8 +37,12 @@ export function LoginPage() {
     try {
       await signIn(DEMO.email, DEMO.password);
       navigate("/projects", { replace: true });
-    } catch {
-      setError("The demo account does not exist yet. Run `python scripts/seed_demo.py` in backend/.");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "The demo account does not exist yet. Run `python scripts/seed_demo.py` in backend/.",
+      );
     } finally {
       setBusy(false);
     }
@@ -88,6 +92,18 @@ export function LoginPage() {
               </button>
             ))}
           </div>
+
+          {!isBackendApiConfigured && (
+            <div
+              role="status"
+              className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+            >
+              This frontend build has no backend connected yet. Set
+              <code className="mx-1 rounded bg-amber-100 px-1">VITE_API_BASE_URL</code>
+              to the deployed FastAPI service URL in Vercel, then redeploy to enable sign-in and
+              agent workflows.
+            </div>
+          )}
 
           <form onSubmit={submit} className="space-y-4">
             {mode === "register" && (

@@ -204,7 +204,7 @@ docker compose exec api python scripts/seed_demo.py
 cd backend
 pytest -q                                    # full backend suite
 python scripts/smoke_pipeline.py --stages all  # 6-agent pipeline in mock mode
-python scripts/smoke_api.py                  # 60 HTTP checks across the whole API
+python scripts/smoke_api.py                  # end-to-end HTTP smoke checks across the API
 python scripts/run_workflow.py               # LangGraph workflow driven from the CLI
 npm run build && npm run lint                # frontend (in frontend/)
 ```
@@ -212,11 +212,12 @@ npm run build && npm run lint                # frontend (in frontend/)
 * `pytest` covers authentication, project ownership boundaries, the full workflow with its
   human gates, artefact production, sandbox restrictions (allow-list, path traversal,
   shell metacharacters), traceability and the GitHub confirmation rules.
-* `smoke_pipeline.py` proves the agents end-to-end: 6 agents produce artefacts, the
+* `smoke_pipeline.py` proves the agents end-to-end: all 6 agents produce artefacts, the
   generated project's own test suite runs in the sandbox (**16/16 passing**), the security
-  agent scans 25 files and the documentation agent writes six documents.
+  agent scans generated files and the documentation agent writes six documents.
 * `smoke_api.py` drives the real HTTP surface with a `TestClient` and a temporary database
-  (60 assertions: auth, workflow, artefacts, tests, security, traceability, audit, git).
+  (auth, workflow, artefacts, tests, security, traceability, audit and git); it prints the exact
+  number of checks on each run.
 * Results from the last full run are recorded in [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
 
 ---
@@ -287,11 +288,16 @@ sign in as `demo@devforge.dev / devforge123` and walk the tabs — the project i
 
 ## 12. Project status & known limits
 
-* Verified natively on Python 3.13 + SQLite: backend suite (**51 passing**), pipeline smoke
-  (**16/16 generated tests passing**), API smoke (**60 checks, all green**) and the CLI
-  workflow (COMPLETED). Full evidence log: [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
-* Frontend: `tsc --noEmit` is clean under strict mode and `vite build` produces a 371 kB
-  bundle (112 kB gzipped). Monaco is loaded lazily; if the editor assets are unreachable the
+* Latest local verification (2026-10-05, Python 3.11 + SQLite, Node 22): backend suite
+  (**54 passing**), pipeline smoke (**16/16 generated tests passing**), API smoke
+  (**59 checks passing**) and the CLI workflow with a change-request round trip (COMPLETED).
+  Frontend build and lint also pass. Full evidence: [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
+* Mock mode needs no external LLM API key. Live generation requires credentials for the
+  configured model provider; GitHub credentials are optional and only needed for remote delivery.
+* Vercel hosts the static frontend; the FastAPI service, persistent database, workspace and
+  workflow state must run on a persistent backend host. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+* Frontend: `tsc --noEmit` is clean under strict mode and the latest `vite build` produces a
+  372 kB bundle (113 kB gzipped). Monaco is loaded lazily; if the editor assets are unreachable the
   code view falls back to a read-only block instead of failing.
 * Docker Compose is syntax-checked but was not executed in the development environment used
   for this report (no Docker daemon available there).
@@ -301,6 +307,3 @@ sign in as `demo@devforge.dev / devforge123` and walk the tabs — the project i
   container-level isolation.
 
 ---
-
-"# devforge1" 
-"# devforge1" 
