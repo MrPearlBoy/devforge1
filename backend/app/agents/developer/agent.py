@@ -214,7 +214,7 @@ class DeveloperAgent(BaseAgent):
                 "Confirm the API still starts with JWT_SECRET and DEBUG set through the environment.",
             ],
             "notes": [
-                f"Rules addressed: {', '.join(rule for rule in rules if rule)}",
+                f"Rules addressed: {', '.join(rule for rule in rules if rule)}", # type: ignore
                 "A development .env file (not committed) is the intended way to supply JWT_SECRET.",
                 "Re-scanning is required before this remediation is considered complete.",
             ],
