@@ -1,0 +1,22 @@
+# DevForge backend runtime dependencies
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30
+pydantic>=2.7
+pydantic-settings>=2.4
+email-validator>=2.2
+python-multipart>=0.0.9
+SQLAlchemy>=2.0,<2.2
+alembic>=1.13
+psycopg2-binary>=2.9.9
+pgvector>=0.3
+PyJWT>=2.9
+bcrypt>=4.2
+cryptography>=43
+httpx>=0.27
+GitPython>=3.1.43
+
+# Multi-agent orchestration (LangGraph 1.x: StateGraph, interrupt, Command, checkpointers)
+langgraph>=1.0
+langgraph-checkpoint-sqlite>=2.0
+# Optional: Postgres checkpointer for orchestration state (install in production)
+# langgraph-checkpoint-postgres>=2.0

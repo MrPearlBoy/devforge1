@@ -1,0 +1,80 @@
+# DevForge — local / demo stack
+#
+#   cp .env.example .env      # set SECRET_KEY (and LLM keys for live mode)
+#   docker compose up --build
+#   docker compose exec api alembic upgrade head
+#   docker compose exec api python scripts/seed_demo.py
+#
+# Services: postgres (with pgvector) · api (FastAPI/uvicorn) · frontend (Vite).
+# The backend uses a restricted subprocess sandbox by default; to execute generated code in
+# a separate container set EXECUTION_PROVIDER=docker and mount the sandbox socket.
+name: devforge
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-devforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devforge}
+      POSTGRES_DB: ${POSTGRES_DB:-devforge}
+    volumes:
+      - devforge-db:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-devforge} -d ${POSTGRES_DB:-devforge}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-devforge}:${POSTGRES_PASSWORD:-devforge}@db:5432/${POSTGRES_DB:-devforge}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+      DEVFORGE_MODE: ${DEVFORGE_MODE:-mock}
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-auto}
+      VECTOR_BACKEND: ${VECTOR_BACKEND:-auto}
+      WORKSPACE_ROOT: /data/workspace
+      CHECKPOINT_PATH: /data/checkpoints.sqlite
+      CHECKPOINT_BACKEND: sqlite
+      EXECUTION_PROVIDER: ${EXECUTION_PROVIDER:-subprocess}
+      EXECUTION_ENABLED: ${EXECUTION_ENABLED:-true}
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      AUTO_CREATE_SCHEMA: "false"
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    volumes:
+      - devforge-workspace:/data/workspace
+      - devforge-checkpoints:/data
+    ports:
+      - "${API_PORT:-8000}:8000"
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_TARGET: http://api:8000
+    depends_on:
+      - api
+    environment:
+      VITE_API_TARGET: http://api:8000
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    command: sh -c "npm run dev -- --host 0.0.0.0 --port 5173"
+
+volumes:
+  devforge-db:
+  devforge-workspace:
+  devforge-checkpoints:

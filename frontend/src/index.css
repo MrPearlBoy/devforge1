@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/* DevForge visual language: a calm slate/parchment workspace with a single indigo accent. */
+@theme {
+  --color-forge-50: #eef2ff;
+  --color-forge-100: #e0e7ff;
+  --color-forge-200: #c7d2fe;
+  --color-forge-300: #a5b4fc;
+  --color-forge-400: #818cf8;
+  --color-forge-500: #6366f1;
+  --color-forge-600: #4f46e5;
+  --color-forge-700: #4338ca;
+  --color-forge-800: #3730a3;
+  --color-forge-900: #312e81;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #f7f7fb;
+  color: #1e1b33;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+@utility card {
+  @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium
+         transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility btn-primary {
+  @apply btn bg-forge-600 text-white hover:bg-forge-700;
+}
+
+@utility btn-secondary {
+  @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+}
+
+@utility btn-danger {
+  @apply btn bg-rose-600 text-white hover:bg-rose-700;
+}
+
+@utility input {
+  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900
+         outline-none placeholder:text-slate-400 focus:border-forge-500 focus:ring-2
+         focus:ring-forge-100;
+}
+
+@utility label {
+  @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500;
+}
+
+@utility chip {
+  @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.6s ease-in-out infinite;
+}
