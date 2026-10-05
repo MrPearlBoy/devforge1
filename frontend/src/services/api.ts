@@ -1,8 +1,8 @@
 /**
  * Thin typed API client.
  *
- * Always talks to the same origin (`/api/...`) so the Vite dev server can proxy requests to
- * the backend; the JWT is attached from local storage and never logged.
+ * Uses the Vite same-origin proxy locally, and the configured FastAPI origin in production.
+ * The JWT is attached from local storage and never logged.
  */
 import type {
   AgentSpec,
@@ -33,6 +33,13 @@ import type {
   WorkspaceTree,
 } from "../types/api";
 
+/**
+ * Optional production API origin. Local development keeps using the Vite proxy;
+ * Vercel builds set this to the deployed FastAPI origin (without a trailing slash).
+ */
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/+$/, "");
+export const isBackendApiConfigured = !import.meta.env.PROD || Boolean(API_BASE_URL);
+
 const TOKEN_KEY = "devforge.token";
 
 export function getToken(): string | null {
@@ -62,7 +69,14 @@ async function request<T>(
   options: RequestInit & { query?: Record<string, string | number | boolean | undefined> } = {},
 ): Promise<T> {
   const { query, ...init } = options;
-  const url = new URL(path, window.location.origin);
+  if (import.meta.env.PROD && !API_BASE_URL) {
+    throw new ApiError(
+      503,
+      "This production build has no backend API configured. Set VITE_API_BASE_URL and redeploy.",
+      "api_not_configured",
+    );
+  }
+  const url = new URL(`${API_BASE_URL}${path}`, window.location.origin);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
